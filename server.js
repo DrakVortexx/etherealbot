@@ -4,6 +4,7 @@ const mineflayer = require('mineflayer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Express server for Render
 app.get('/', (req, res) => {
   res.send('Mineflayer bot is running!');
 });
@@ -34,17 +35,16 @@ function startBot() {
     console.log('Bot spawned.');
 
     try {
-      // Wait for the server to finish loading
+      // Wait for everything to load
       await sleep(10000);
 
       // Login
       bot.chat('/login bobbybenson');
       console.log('Sent login command.');
 
-      // Wait after logging in
-      await sleep(30000);
+      // Give the server time to process the login
+      await sleep(15000);
 
-      // Stop if disconnected
       if (bot._client.ended) {
         console.log('Bot disconnected before actions started.');
         return;
@@ -52,14 +52,14 @@ function startBot() {
 
       console.log('Beginning actions...');
 
-      // Move right
+      // Walk right
       bot.setControlState('right', true);
       await sleep(1800);
       bot.setControlState('right', false);
 
       await sleep(1000);
 
-      // Move forward
+      // Walk forward
       bot.setControlState('forward', true);
       await sleep(1800);
       bot.setControlState('forward', false);
@@ -72,7 +72,7 @@ function startBot() {
 
       await sleep(1000);
 
-      console.log('Starting infinite mining...');
+      console.log('Starting mining loop...');
 
       // Mine forever
       while (!bot._client.ended) {
@@ -95,15 +95,19 @@ function startBot() {
     }
   });
 
+  bot.on('message', (message) => {
+    console.log('[SERVER]', message.toString());
+  });
+
   bot.on('chat', (username, message) => {
     console.log(`<${username}> ${message}`);
   });
 
-  bot.on('kicked', reason => {
-    console.log('Kicked:', reason);
+  bot.on('kicked', (reason) => {
+    console.log('Kicked:', JSON.stringify(reason, null, 2));
   });
 
-  bot.on('error', err => {
+  bot.on('error', (err) => {
     console.error('Bot error:', err);
   });
 
@@ -111,11 +115,8 @@ function startBot() {
     console.log('Disconnected from server.');
     console.log('Reconnecting in 30 seconds...');
 
-    setTimeout(() => {
-      startBot();
-    }, 30000);
+    setTimeout(startBot, 30000);
   });
 }
 
-// Start the first bot instance
 startBot();

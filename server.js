@@ -1,4 +1,3 @@
-```js
 const express = require('express');
 const mineflayer = require('mineflayer');
 
@@ -146,4 +145,3 @@ function startBot() {
 }
 
 startBot();
-```

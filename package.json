@@ -1,11 +1,13 @@
 {
-  "name": "mineflayer-bot",
+  "name": "etherealbot",
   "version": "1.0.0",
+  "description": "Mineflayer bot hosted on Render",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "mineflayer": "^4.0.0"
+    "express": "^5.1.0",
+    "mineflayer": "^4.24.0"
   }
 }

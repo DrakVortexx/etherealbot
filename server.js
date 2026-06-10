@@ -1,10 +1,11 @@
+```js
 const express = require('express');
 const mineflayer = require('mineflayer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Express server for Render
+// Keep Render service alive
 app.get('/', (req, res) => {
   res.send('Mineflayer bot is running!');
 });
@@ -27,6 +28,8 @@ function startBot() {
     version: '1.20.1'
   });
 
+  let disconnected = false;
+
   bot.on('login', () => {
     console.log('Successfully connected to Minecraft.');
   });
@@ -35,58 +38,79 @@ function startBot() {
     console.log('Bot spawned.');
 
     try {
-      // Wait for everything to load
+      // Wait for server to fully load
       await sleep(10000);
 
       // Login
-      bot.chat('/login bobbybenson');
+      bot.chat(`/login ${process.env.MC_PASSWORD}`);
       console.log('Sent login command.');
 
-      // Give the server time to process the login
-      await sleep(15000);
+      // Wait for login to complete
+      await sleep(5000);
 
-      if (bot._client.ended) {
+      if (disconnected) {
         console.log('Bot disconnected before actions started.');
         return;
       }
 
-      console.log('Beginning actions...');
+      console.log('Walking to NPC...');
 
-      // Walk right
+      // Move right (~3 blocks)
       bot.setControlState('right', true);
-      await sleep(1800);
+      await sleep(1350);
       bot.setControlState('right', false);
 
-      await sleep(1000);
+      await sleep(500);
 
-      // Walk forward
+      // Move forward (~3 blocks)
       bot.setControlState('forward', true);
-      await sleep(1800);
+      await sleep(1350);
       bot.setControlState('forward', false);
 
       await sleep(1000);
 
-      // Right click
-      bot.activateItem();
-      console.log('Right-clicked.');
+      console.log('Scanning for NPC...');
 
-      await sleep(1000);
+      // Find nearest player entity (Citizens NPCs usually appear as players)
+      const npc = Object.values(bot.entities)
+        .filter(entity =>
+          entity.type === 'player' &&
+          entity.username &&
+          entity.username !== bot.username
+        )
+        .sort((a, b) =>
+          bot.entity.position.distanceTo(a.position) -
+          bot.entity.position.distanceTo(b.position)
+        )[0];
 
-      console.log('Starting mining loop...');
+      if (npc) {
+        console.log(`Found NPC: ${npc.username}`);
 
-      // Mine forever
-      while (!bot._client.ended) {
+        // Look at NPC's head
+        await bot.lookAt(npc.position.offset(0, 1.6, 0));
+
+        await sleep(500);
+
+        // Right-click NPC
+        bot.activateEntity(npc);
+
+        console.log('Clicked NPC.');
+
+        // Wait for teleport/server transfer
+        await sleep(5000);
+      } else {
+        console.log('No NPC found.');
+      }
+
+      console.log('Starting left-click loop...');
+
+      // Infinite left-click loop
+      while (!disconnected) {
         try {
-          const block = bot.blockAtCursor(4);
-
-          if (block && bot.canDigBlock(block)) {
-            console.log(`Mining ${block.name}`);
-            await bot.dig(block);
-          } else {
-            await sleep(500);
-          }
+          bot.swingArm('right');
+          await sleep(100);
         } catch (err) {
-          console.log('Mining error:', err.message);
+          console.log('Click error:', err.message);
           await sleep(1000);
         }
       }
@@ -112,6 +136,8 @@ function startBot() {
   });
 
   bot.on('end', () => {
+    disconnected = true;
+
     console.log('Disconnected from server.');
     console.log('Reconnecting in 30 seconds...');
 
@@ -120,3 +146,4 @@ function startBot() {
 }
 
 startBot();
+```

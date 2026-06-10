@@ -13,6 +13,10 @@ app.listen(PORT, () => {
   console.log(`Web server listening on port ${PORT}`);
 });
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Create the bot
 const bot = mineflayer.createBot({
   host: 'ethereal.mov',
@@ -21,56 +25,72 @@ const bot = mineflayer.createBot({
   version: '1.21.4'
 });
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+bot.on('login', () => {
+  console.log('Successfully connected to Minecraft.');
+});
 
 bot.once('spawn', async () => {
   console.log('Bot spawned.');
 
-  // Wait for the server to load
-  await sleep(5000);
+  try {
+    // Wait for the server to finish loading
+    await sleep(10000);
 
-  // Login
-  bot.chat('/login bobbybenson');
-  console.log('Logged in.');
+    // Login
+    bot.chat('/login bobbybenson');
+    console.log('Sent login command.');
 
-  await sleep(5000);
+    // Wait to make sure the bot stays connected
+    await sleep(30000);
 
-  // Move right
-  bot.setControlState('right', true);
-  await sleep(1800);
-  bot.setControlState('right', false);
-
-  await sleep(500);
-
-  // Move forward
-  bot.setControlState('forward', true);
-  await sleep(1800);
-  bot.setControlState('forward', false);
-
-  await sleep(500);
-
-  // Right click
-  bot.activateItem();
-
-  console.log('Starting infinite mining...');
-
-  // Mine forever
-  while (true) {
-    try {
-      const block = bot.blockAtCursor(4);
-
-      if (block && bot.canDigBlock(block)) {
-        console.log(`Mining ${block.name}`);
-        await bot.dig(block);
-      } else {
-        await sleep(500);
-      }
-    } catch (err) {
-      console.log('Mining error:', err.message);
-      await sleep(1000);
+    // Stop if disconnected
+    if (bot._client.ended) {
+      console.log('Bot disconnected before actions started.');
+      return;
     }
+
+    console.log('Bot is still online. Beginning actions...');
+
+    // Move right
+    bot.setControlState('right', true);
+    await sleep(1800);
+    bot.setControlState('right', false);
+
+    await sleep(1000);
+
+    // Move forward
+    bot.setControlState('forward', true);
+    await sleep(1800);
+    bot.setControlState('forward', false);
+
+    await sleep(1000);
+
+    // Right click
+    bot.activateItem();
+    console.log('Right-clicked.');
+
+    await sleep(1000);
+
+    console.log('Starting infinite mining...');
+
+    // Infinite mining loop
+    while (!bot._client.ended) {
+      try {
+        const block = bot.blockAtCursor(4);
+
+        if (block && bot.canDigBlock(block)) {
+          console.log(`Mining ${block.name}`);
+          await bot.dig(block);
+        } else {
+          await sleep(500);
+        }
+      } catch (err) {
+        console.log('Mining error:', err.message);
+        await sleep(1000);
+      }
+    }
+  } catch (err) {
+    console.error('Spawn sequence error:', err);
   }
 });
 
@@ -83,7 +103,7 @@ bot.on('kicked', reason => {
 });
 
 bot.on('error', err => {
-  console.log('Error:', err);
+  console.error('Bot error:', err);
 });
 
 bot.on('end', () => {

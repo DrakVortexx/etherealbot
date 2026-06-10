@@ -18,7 +18,7 @@ const bot = mineflayer.createBot({
   host: 'ethereal.mov',
   port: 25565,
   username: 'DrakVortexx_alt',
-  version: false
+  version: '1.21.4'
 });
 
 function sleep(ms) {

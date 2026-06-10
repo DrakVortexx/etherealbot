@@ -24,7 +24,7 @@ function startBot() {
     host: 'ethereal.mov',
     port: 25565,
     username: 'DrakVortexx_alt',
-    version: '1.21.4'
+    version: '1.20.1'
   });
 
   bot.on('login', () => {
